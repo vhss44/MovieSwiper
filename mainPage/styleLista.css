@@ -10,22 +10,19 @@ body {
   min-height: 100vh;
 }
 header {
-  background-color: #1c1c1c;
-  padding: 15px;
   text-align: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  border-bottom: 1px solid #333;
+  padding: 20px;
+  background: #141414;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 10;
   display: flex;
   justify-content: space-between;
 }
 
 header h1
 {
-    font-size: 28px;
+  font-size: 28px;
   color: #e50914;
   text-transform: uppercase;
   letter-spacing: 2px;

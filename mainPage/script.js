@@ -53,6 +53,26 @@ let currentPage = 1;
 let isLoading = false;
 let currentQuery = "";
 
+
+let genresMap = {};
+
+async function loadGenres() {
+  try {
+    const res = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${API_KEY}&language=pl-PL`);
+    const data = await res.json();
+    data.genres.forEach(g => {
+      genresMap[g.id] = g.name;
+    });
+  } catch (err) {
+    console.error("Błąd pobierania listy gatunków:", err);
+  }
+}
+
+// Wywołaj przy starcie
+loadGenres();
+
+
+
 // Pobieranie filmów
 async function getMovies(page = 1) {
   let API_URL = "";
@@ -91,7 +111,7 @@ async function addToSharedList(movieId) {
     .from('shared_list')
     .select('*')
     .eq('movie_id', movieId)
-    .single(); // single() zwraca pierwszy rekord lub null
+    .maybeSingle(); // single() zwraca pierwszy rekord lub null
 
   if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = record not found
     console.error("Błąd sprawdzania filmu:", checkError);
@@ -115,7 +135,7 @@ async function addToSharedList(movieId) {
   } else {
     console.log("Dodano do wspólnej listy:", data);
     alert("Dodano do wspólnej listy!");
-    loadSharedList(); // odśwież listę
+    
   }
 }
 
@@ -126,6 +146,9 @@ async function addToSharedList(movieId) {
 
 // Wyświetlanie filmów
 function showMovies(movies) {
+  
+
+
   const container = document.getElementById("movies");
 
   if (!movies || movies.length === 0) {
@@ -135,24 +158,32 @@ function showMovies(movies) {
     return;
   }
 
-  movies.forEach(movie => {
-    const movieEl = document.createElement("div");
-    movieEl.classList.add("movie");
+ movies.forEach(movie => {
+  const movieEl = document.createElement("div");
+  movieEl.classList.add("movie");
 
-    movieEl.innerHTML = `
-      <img src="https://image.tmdb.org/t/p/w300${movie.poster_path}" alt="${movie.title}">
-      <h3>${movie.title}</h3>
-      <p>Premiera: ${movie.release_date || "brak danych"}</p>
-      <button class="shared-btn"> Dodaj do listy</button>
-    `;
-   movieEl.querySelector(".shared-btn").addEventListener("click", () => {
-  addToSharedList(movie.id);
+  movieEl.innerHTML = `
+    <img src="https://image.tmdb.org/t/p/w300${movie.poster_path}" alt="${movie.title}">
+    <h3>${movie.title}</h3>
+    <p>Premiera: ${movie.release_date || "brak danych"}</p>
+    <button class="shared-btn">Dodaj do listy</button>
+  `;
+
+  // 1️⃣ Obsługa przycisku "Dodaj do wspólnej listy"
+  movieEl.querySelector(".shared-btn").addEventListener("click", (e) => {
+    e.stopPropagation(); // ważne! żeby kliknięcie przycisku nie otwierało modala
+    addToSharedList(movie.id);
+  });
+
+  // 2️⃣ Kliknięcie w film (poza przyciskiem) – otwiera modal
+  movieEl.addEventListener("click", () => {
+    openMovieModal(movie.id);
+  });
+
+  container.appendChild(movieEl);
 });
 
 
-
-    container.appendChild(movieEl);
-  });
 }
 
 // Obsługa wyszukiwarki
@@ -191,6 +222,61 @@ footerToggle.addEventListener("click", () => {
   footer.classList.toggle("open");
   footerToggle.classList.toggle("open");
 });
+// Elementy modala
+const modal = document.getElementById("movieModal");
+const modalTitle = document.getElementById("modalTitle");
+const modalOverview = document.getElementById("modalOverview");
+const modalTrailer = document.getElementById("modalTrailer");
+const modalGenres = document.getElementById("modalGenres"); 
+const closeBtn = document.querySelector(".close-btn");
+
+// Funkcja otwierająca modal
+async function openMovieModal(movieId) {
+  try {
+    // Pobierz szczegóły filmu z TMDB
+    const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=pl-PL&append_to_response=videos`);
+    const movie = await res.json();
+
+    modalTitle.textContent = movie.title;
+    modalOverview.textContent = movie.overview || "Brak opisu.";
+
+    if (movie.genres && movie.genres.length > 0) {
+      modalGenres.textContent = "Gatunki: " + movie.genres.map(g => g.name).join(", ");
+    } else {
+      modalGenres.textContent = "Gatunki: brak danych";
+    }
+  
+    // Pobierz trailer z YouTube
+    const trailer = movie.videos.results.find(v => (v.type === "Trailer" || v.type === "Teaser") && v.site === "YouTube");
+
+    if (trailer) {
+      modalTrailer.innerHTML = `<iframe src="https://www.youtube.com/embed/${trailer.key}" allowfullscreen></iframe>`;
+    } else {
+      modalTrailer.innerHTML = `<p>Brak trailera.</p>`;
+    }
+
+    modal.style.display = "block";
+  } catch (err) {
+    console.error("Błąd ładowania filmu:", err);
+  }
+}
+
+// Zamknięcie modala
+closeBtn.addEventListener("click", () => {
+  modal.style.display = "none";
+  modalTrailer.innerHTML = ""; // usuń iframe, żeby zatrzymać film
+});
+
+// Zamknięcie po kliknięciu poza modal
+window.addEventListener("click", e => {
+  if (e.target === modal) {
+    modal.style.display = "none";
+    modalTrailer.innerHTML = "";
+  }
+});
+
+// Przykład – w showMovies dodaj event
+// movieEl.addEventListener("click", () => openMovieModal(movie.id));
 
 
 

@@ -292,3 +292,46 @@ span img
 {
   width: 25px;
 }
+/* MODAL */
+.modal {
+  display: none; /* ukryty domyślnie */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.85);
+}
+#modalTitle
+{
+  color: #e50914;
+}
+.modal-content {
+  background-color: #121212;
+  margin: 5% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 700px;
+  color: #fff;
+}
+
+.close-btn {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+#modalTrailer iframe {
+  width: 100%;
+  height: 350px;
+  border: none;
+}
