@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="styleLista.css">
+<title>Wspólna lista filmów</title>
+
+</head>
+<body>
+
+<header>
+  <h1>Wspólna lista</h1>
+
+    <div class="profile-menu">
+      <button id="profileBtn"><span id="profilePicture"></span><span id="profileName"></span> <img src="img/arrowDown.png" alt="" id="arrowProfile"></button>
+      <div id="dropdown" class="dropdown-content">
+         <a href="#" id="sharedListBtn">Wspólna lista</a>
+        <a href="#" id="logoutBtn">Wyloguj się</a>
+      </div>
+    </div>
+</header>
+
+<main>
+  <div id="sharedList" class="movies-grid"></div>
+</main>
+
+<button id="footerToggle" class="footer-toggle"><img src="img/arrow.png" alt=""></button>
+
+
+<div id="footer" class="footer">
+  <div class="footer-content">
+    <h2>Menu</h2>
+    <ul>
+      <li><a href="index.html"><img src="img/heart.png" alt="">Strona główna</a></li>
+      <li><a href="#">⭐ Najlepiej oceniane</a></li>
+      <li><a href="#">🎬 Ostatnio oglądane</a></li>
+    </ul>
+  </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+    const footer = document.getElementById("footer");
+    const footerToggle = document.getElementById("footerToggle");
+
+    footerToggle.addEventListener("click", () => {
+      footer.classList.toggle("open");
+      footerToggle.classList.toggle("open");
+    });
+
+
+    const currentUser = sessionStorage.getItem('currentUser') || 'guest';
+    console.log("Zalogowany użytkownik:", currentUser);
+
+    // Wyświetlenie nazwy użytkownika
+    document.getElementById("profileName").textContent = currentUser;
+    document.getElementById("profilePicture").innerHTML = '<img src="../loginPage/img/avatar'+currentUser+'.jpg" alt="">'
+    // Toggle dropdown
+    const profileBtn = document.getElementById("profileBtn");
+    const dropdown = document.getElementById("dropdown");
+
+    profileBtn.addEventListener("click", () => {
+      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    });
+
+    document.getElementById("sharedListBtn").addEventListener("click", () => {
+      // otwórz nową stronę np. shared.html
+    window.location.href = "shared.html";
+
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      // usuń zapisany userId
+      sessionStorage.removeItem("currentUser");
+      // przekieruj na stronę logowania
+      window.location.href = "../loginPage/loginPage.html"; // lub "login.html" jeśli masz osobną stronę logowania
+    });
+
+
+    // Zamknij dropdown jeśli klikniesz poza nim
+    window.addEventListener("click", (e) => {
+      if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = "none";
+      }
+    });
+    
+
+
+      const SUPABASE_URL = "https://hxaqbpcufdlzfhmgddds.supabase.co";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4YXFicGN1ZmRsemZobWdkZGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4MzY3ODQsImV4cCI6MjA3MjQxMjc4NH0.o38-3lqMWMAESf5I3oXaGXqTp1fXw6mkZ310b7-EhXo"; // wstaw dokładnie swój anon public key
+      const { createClient } = supabase;
+      const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      const API_KEY = "9b02e967dce99b746fc634d03605d150";
+
+
+    async function removeFromSharedList(movieId) {
+    const { data, error } = await supabaseClient
+      .from('shared_list')
+      .delete()
+      .eq('movie_id', Number(movieId))
+      .select();
+
+    console.log("Usuwany movie_id:", movieId);
+    
+    
+      if (error) {
+        console.error("Błąd usuwania filmu:", error);
+        alert("Nie udało się usunąć filmu.");
+      } else {
+        console.log("Usunięto film:", data); // teraz zobaczysz usunięty rekord
+        loadSharedList(); // odśwież listę
+      }
+    }
+
+
+
+
+  async function loadSharedList() {
+    
+    const container = document.getElementById("sharedList");
+    container.innerHTML = "";
+
+    // Pobierz rekordy ze wspólnej listy
+    let { data, error } = await supabaseClient.from('shared_list').select('*');
+
+    if (error) {
+      console.error("Błąd pobierania wspólnej listy:", error);
+      container.innerHTML = "<p>Nie udało się pobrać listy.</p>";
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      container.innerHTML = "<p>Brak filmów na wspólnej liście.</p>";
+      return;
+    }
+
+    // Wyświetl filmy
+    for (const item of data) {
+      try {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${item.movie_id}?api_key=${API_KEY}&language=pl-PL`);
+        const movie = await res.json();
+
+        const poster = movie.poster_path
+          ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
+          : 'https://via.placeholder.com/300x450?text=No+Poster';
+
+    const div = document.createElement("div");
+    div.classList.add("movie");
+    div.innerHTML = `
+      <img src="${poster}" alt="${movie.title}">
+      <h3>${movie.title}</h3>
+      <p>Dodane przez: ${item.added_by}</p>
+      <button class="remove-btn">Usuń</button>
+    `;
+    container.appendChild(div);
+
+    // Obsługa kliknięcia
+    div.querySelector(".remove-btn").addEventListener("click", () => {
+  if (confirm(`Czy na pewno chcesz usunąć "${movie.title}"?`)) {
+    removeFromSharedList(Number(item.movie_id));
+
+       
+      }
+    });
+
+      } catch (err) {
+        console.error("Błąd pobierania filmu z TMDB:", err);
+      }
+    }
+  }
+
+
+  // Uruchomienie
+  loadSharedList();
+</script>
+
+</body>
+</html>

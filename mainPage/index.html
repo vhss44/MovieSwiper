@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Swiper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Movie Swiper</h1>
+    <div class="profile-menu">
+      <button id="profileBtn"><span id="profilePicture"></span><span id="profileName"></span> <img src="img/arrowDown.png" alt="" id="arrowProfile"></button>
+      <div id="dropdown" class="dropdown-content">
+         <a href="#" id="sharedListBtn">Wspólna lista</a>
+        <a href="#" id="logoutBtn">Wyloguj się</a>
+      </div>
+    </div>
+  </header>
+
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Szukaj filmu...">
+    <button id="searchBtn">Szukaj</button>
+  </div>
+
+
+  <main>
+    <div id="movies" class="movies-grid"></div>
+  </main>
+
+<button id="footerToggle" class="footer-toggle"><img src="img/arrow.png" alt=""></button>
+
+<!-- FOOTER -->
+<div id="footer" class="footer">
+  <div class="footer-content">
+    <h2>Menu</h2>
+    <ul>
+      <li><a href="shared.html"><img src="img/heart.png" alt="">Wspólna lista</a></li>
+      <li><a href="#">⭐ Najlepiej oceniane</a></li>
+      <li><a href="#">🎬 Ostatnio oglądane</a></li>
+    </ul>
+  </div>
+</div>
+
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
