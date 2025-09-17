@@ -61,9 +61,16 @@ main {
 }
 
 .movie h3 {
-  font-size: 16px;
+font-size: 16px;
   margin: 10px;
   text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;      /* maksymalnie 2 linijki */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2em;
+  max-height: 2.4em
 }
 
 .movie p {
@@ -215,12 +222,12 @@ span img
 
 .footer-content {
   padding: 20px;
-  overflow-y: auto;
+  overflow-y: hidden;
   width: 100%;
   text-align: center;
 }
 .footer-content h2 {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 .footer-content ul {
   list-style: none;
@@ -229,7 +236,7 @@ span img
 }
 
 .footer-content li {
-  margin: 12px 0;
+  margin: 10px 0;
 }
 
 .footer-content a {
@@ -280,4 +287,137 @@ span img
 #footerToggle img
 {
   width: 25px;
+}
+@media (max-width: 480px) {
+  header h1 {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .movie img {
+    height: 140px;
+  }
+
+  .movie h3 {
+    font-size: 12px;
+    margin: 5px;
+  }
+
+  .movie p {
+    font-size: 10px;
+  }
+
+  .movie button {
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+
+  /* Modal na telefonach */
+  .modal-content {
+    width: 95%;
+    padding: 15px;
+  }
+
+  #modalTrailer iframe {
+    height: 200px;
+  }
+
+}
+
+/* Telefony średnie (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .movie img {
+    height: 180px;
+  }
+
+  .movie h3 {
+    font-size: 14px;
+  }
+
+  .movie p {
+    font-size: 12px;
+  }
+
+  .modal-content {
+    width: 90%;
+  }
+
+  #modalTrailer iframe {
+    height: 260px;
+  }
+}
+
+/* Tablety i małe laptopy (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+
+  .movie img {
+    height: 220px;
+  }
+
+  .modal-content {
+    width: 80%;
+  }
+
+  #modalTrailer iframe {
+    height: 320px;
+  }
+}
+.modal {
+  display: none; /* ukryty domyślnie */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.85);
+}
+
+.modal-content {
+  background-color: #121212;
+  margin: 5% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 700px;
+  color: #fff;
+}
+
+.close-btn {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+#modalTrailer iframe {
+  width: 100%;
+  height: 350px;
+  border: none;
+}
+b
+{
+  color: #e50914;
 }

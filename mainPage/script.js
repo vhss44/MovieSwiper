@@ -241,7 +241,7 @@ async function openMovieModal(movieId) {
     modalOverview.textContent = movie.overview || "Brak opisu.";
 
     if (movie.genres && movie.genres.length > 0) {
-      modalGenres.textContent = "Gatunki: " + movie.genres.map(g => g.name).join(", ");
+      modalGenres.innerHTML = "<b>Gatunki: </b>" + movie.genres.map(g => g.name).join(", ");
     } else {
       modalGenres.textContent = "Gatunki: brak danych";
     }

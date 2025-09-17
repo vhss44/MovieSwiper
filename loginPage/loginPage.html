@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0, user-scalable=no" >
   <title>Wybór profilu</title>
   <link rel="stylesheet" href="styleLogin.css">
   <style>
@@ -11,24 +11,34 @@
 </head>
 <body>
   <header>
-    <h1>Wybierz swój profil</h1>
+    <h1>MOVIE SWIPER</h1>
   </header>
 
   <main class="profiles-container">
     <div class="profile" data-user="Emiś">
       <div class="avatar-frame">
-        <img src="img/avatarEmiś.jpg" alt="Emiś">
+        <img src="img/avatarEmiś.jpg" alt="Emiś" id="EmisImg">
       </div>
       <h3>Emiś</h3>
     </div>
 
     <div class="profile" data-user="Julcia">
       <div class="avatar-frame">
-        <img src="img/avatarJulcia.jpg" alt="Julcia">
+        <img src="img/avatarJulcia.jpg" alt="Julcia" id="JulciaImg">
       </div>
       <h3>Julcia</h3>
     </div>
   </main>
+  
+
+
+<section>
+  <div class='air air1'></div>
+  <div class='air air2'></div>
+  <div class='air air3'></div>
+  <div class='air air4'></div>
+</section>
+
 
   <script>
     const profiles = document.querySelectorAll(".profile");
