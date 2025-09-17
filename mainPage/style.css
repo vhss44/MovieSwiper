@@ -243,7 +243,7 @@ span img
 }
 
 .footer-content li {
-  margin: 5px 0;
+  margin: 10px 0;
 }
 
 .footer-content a {
@@ -381,8 +381,14 @@ span img
   }
 
   .footer {
-    height: 35%;
+    height: 30%;
   }
+}
+
+
+p a
+{
+  color: #e50914;
 }
 @media (min-width: 481px) and (max-width: 768px) {
   header h1 {

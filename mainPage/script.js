@@ -252,7 +252,8 @@ async function openMovieModal(movieId) {
     if (trailer) {
       modalTrailer.innerHTML = `<iframe src="https://www.youtube.com/embed/${trailer.key}" allowfullscreen></iframe>`;
     } else {
-      modalTrailer.innerHTML = `<p>Brak trailera.</p>`;
+      const safeTitle = encodeURIComponent(movie.title || "");
+      modalTrailer.innerHTML = `<p>Brak trailera w TMDB. <a href="https://www.youtube.com/results?search_query=${safeTitle}+trailer" target="_blank" rel="noopener">Szukaj na YouTube</a></p>`;
     }
 
     modal.style.display = "block";

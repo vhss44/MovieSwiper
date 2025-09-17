@@ -111,3 +111,11 @@ section .air.air4{
 }
 
 
+@media (min-width: 300px) and (max-width: 430px) {
+  .profile img {
+    width: 100px;
+    height: 100px;  
+
+}
+
+}
