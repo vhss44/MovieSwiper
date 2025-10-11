@@ -46,6 +46,24 @@ const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
+async function fetchSharedItem(item) {
+  let url = "";
+
+  if(item.type === "movie") {
+    url = `https://api.themoviedb.org/3/movie/${item.movie_id}?api_key=${API_KEY}&language=pl-PL`;
+  } else if(item.type === "tv") {
+    url = `https://api.themoviedb.org/3/tv/${item.movie_id}?api_key=${API_KEY}&language=pl-PL`;
+  } else if(item.type === "anime") {
+    // jeśli traktujesz anime jak film w TMDB
+    url = `https://api.themoviedb.org/3/movie/${item.movie_id}?api_key=${API_KEY}&language=pl-PL`;
+  }
+
+  const res = await fetch(url);
+  const data = await res.json();
+  return data;
+}
+
+
 
 
 const API_KEY = "9b02e967dce99b746fc634d03605d150";
@@ -63,6 +81,8 @@ async function loadGenres() {
     data.genres.forEach(g => {
       genresMap[g.id] = g.name;
     });
+
+
   } catch (err) {
     console.error("Błąd pobierania listy gatunków:", err);
   }
@@ -75,69 +95,88 @@ loadGenres();
 
 // Pobieranie filmów
 async function getMovies(page = 1) {
-  let API_URL = "";
-
-  if (currentQuery) {
-    API_URL = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=pl-PL&query=${encodeURIComponent(currentQuery)}&page=${page}`;
-  } else {
-    API_URL = `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=pl-PL&page=${page}`;
-  }
-
   try {
-    const res = await fetch(API_URL);
-    const data = await res.json();
+    let moviesData = [];
+    let tvData = [];
 
-    if (page === 1) {
-      document.getElementById("movies").innerHTML = ""; // reset przy nowym wyszukiwaniu
+    if (currentQuery) {
+      // Wyszukiwanie filmów
+      const resMovies = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=pl-PL&query=${encodeURIComponent(currentQuery)}&page=${page}`);
+      const dataMovies = await resMovies.json();
+      moviesData = dataMovies.results;
+
+      // Wyszukiwanie seriali
+      const resTV = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&language=pl-PL&query=${encodeURIComponent(currentQuery)}&page=${page}`);
+      const dataTV = await resTV.json();
+      tvData = dataTV.results;
+    } else {
+      // Popularne filmy
+      const resMovies = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=pl-PL&page=${page}`);
+      const dataMovies = await resMovies.json();
+      moviesData = dataMovies.results;
+
+      // Popularne seriale
+      const resTV = await fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pl-PL&page=${page}`);
+      const dataTV = await resTV.json();
+      tvData = dataTV.results;
     }
 
-    showMovies(data.results);
+    // Opcjonalnie: filtruj anime po gatunku 16 (Animation)
+    const animeMovies = moviesData.filter(m => m.genre_ids.includes(16));
+    const animeTV = tvData.filter(t => t.genre_ids.includes(16));
+
+    // Połącz wszystko
+    const combined = [...moviesData, ...tvData, ...animeMovies, ...animeTV];
+
+    if (page === 1) document.getElementById("movies").innerHTML = "";
+
+    showMovies(combined);
   } catch (err) {
-    console.error("Błąd pobierania filmów:", err);
+    console.error("Błąd pobierania filmów i seriali:", err);
   } finally {
     isLoading = false;
   }
 }
-async function saveSwipe(movieId, action) {
-  await supabaseClient.from('swipes').insert([
-    { user_id: currentUser, movie_id: movieId, action }
-  ]);
+
+async function addToSharedList(itemId, type = 'movie') {
+  try {
+    // Sprawdź, czy już jest element o tym ID i typie
+    const { data: existing, error: checkError } = await supabaseClient
+      .from('shared_list')
+      .select('*')
+      .eq('movie_id', itemId)
+      .eq('type', type)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') { 
+      console.error("Błąd sprawdzania:", checkError);
+      alert("Błąd przy sprawdzaniu listy.");
+      return;
+    }
+
+    if (existing) {
+      alert("Ten element jest już na liście!");
+      return;
+    }
+
+    // Dodaj element z typem
+    const { data, error } = await supabaseClient
+      .from('shared_list')
+      .insert([{ movie_id: itemId, type, added_by: currentUser }]);
+
+    if (error) {
+      console.error("Błąd dodawania:", error);
+      alert("Nie udało się dodać elementu.");
+    } else {
+      console.log("Dodano:", data);
+      alert("Dodano do wspólnej listy!");
+    }
+
+  } catch (err) {
+    console.error("Nieoczekiwany błąd:", err);
+  }
 }
 
-
-async function addToSharedList(movieId) {
-  // Sprawdź, czy film już jest
-  const { data: existing, error: checkError } = await supabaseClient
-    .from('shared_list')
-    .select('*')
-    .eq('movie_id', movieId)
-    .maybeSingle(); // single() zwraca pierwszy rekord lub null
-
-  if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = record not found
-    console.error("Błąd sprawdzania filmu:", checkError);
-    alert("Wystąpił błąd przy sprawdzaniu filmu.");
-    return;
-  }
-
-  if (existing) {
-    alert("Ten film jest już na wspólnej liście!");
-    return;
-  }
-
-  // Dodaj film
-  const { data, error } = await supabaseClient
-    .from('shared_list')
-    .insert([{ movie_id: movieId, added_by: currentUser }]);
-
-  if (error) {
-    console.error("Błąd dodawania do wspólnej listy:", error);
-    alert("Nie udało się dodać filmu.");
-  } else {
-    console.log("Dodano do wspólnej listy:", data);
-    alert("Dodano do wspólnej listy!");
-    
-  }
-}
 
 
 
@@ -145,45 +184,38 @@ async function addToSharedList(movieId) {
 
 
 // Wyświetlanie filmów
-function showMovies(movies) {
-  
-
-
+function showMovies(items, page = 1) {
   const container = document.getElementById("movies");
 
-  if (!movies || movies.length === 0) {
-    if (currentPage === 1) {
+  if (!items || items.length === 0) {
+    if (page === 1) {
       container.innerHTML = `<p style="text-align:center;width:100%;">Brak wyników.</p>`;
     }
-    return;
+    return; // dla kolejnych stron po prostu nic nie dodawaj
   }
 
- movies.forEach(movie => {
-  const movieEl = document.createElement("div");
-  movieEl.classList.add("movie");
+  items.forEach(item => {
+    const movieEl = document.createElement("div");
+    movieEl.classList.add("movie");
 
-  movieEl.innerHTML = `
-    <img src="https://image.tmdb.org/t/p/w300${movie.poster_path}" alt="${movie.title}">
-    <h3>${movie.title}</h3>
-    <p>Premiera: ${movie.release_date || "brak danych"}</p>
-    <button class="shared-btn">Dodaj do listy</button>
-  `;
+    movieEl.innerHTML = `
+      <img src="${item.poster_path ? `https://image.tmdb.org/t/p/w300${item.poster_path}` : 'https://via.placeholder.com/300x450?text=Brak+Plakatu'}" alt="${item.title || item.name}">
+      <h3>${item.title || item.name}</h3>
+      <p>Premiera: ${item.release_date || item.first_air_date || "brak danych"}</p>
+      <button class="shared-btn">Dodaj do listy</button>
+    `;
 
-  // 1️⃣ Obsługa przycisku "Dodaj do wspólnej listy"
-  movieEl.querySelector(".shared-btn").addEventListener("click", (e) => {
-    e.stopPropagation(); // ważne! żeby kliknięcie przycisku nie otwierało modala
-    addToSharedList(movie.id);
+    movieEl.querySelector(".shared-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      addToSharedList(item.id, item.title ? 'movie' : 'tv'); 
+    });
+
+    movieEl.addEventListener("click", () => {
+      openMovieModal(item.id, item.title ? 'movie' : 'tv'); 
+    });
+
+    container.appendChild(movieEl);
   });
-
-  // 2️⃣ Kliknięcie w film (poza przyciskiem) – otwiera modal
-  movieEl.addEventListener("click", () => {
-    openMovieModal(movie.id);
-  });
-
-  container.appendChild(movieEl);
-});
-
-
 }
 
 // Obsługa wyszukiwarki
@@ -230,37 +262,37 @@ const modalTrailer = document.getElementById("modalTrailer");
 const modalGenres = document.getElementById("modalGenres"); 
 const closeBtn = document.querySelector(".close-btn");
 
+
+
+
 // Funkcja otwierająca modal
-async function openMovieModal(movieId) {
+async function openMovieModal(itemId, type = 'movie') {
   try {
-    // Pobierz szczegóły filmu z TMDB
-    const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=pl-PL&append_to_response=videos`);
+    let url = type === 'tv' 
+      ? `https://api.themoviedb.org/3/tv/${itemId}?api_key=${API_KEY}&language=pl-PL&append_to_response=videos`
+      : `https://api.themoviedb.org/3/movie/${itemId}?api_key=${API_KEY}&language=pl-PL&append_to_response=videos`;
+
+    const res = await fetch(url);
     const movie = await res.json();
 
-    modalTitle.textContent = movie.title;
+    modalTitle.textContent = movie.title || movie.name;
     modalOverview.textContent = movie.overview || "Brak opisu.";
+    modalGenres.innerHTML = movie.genres?.length
+      ? "<b>Gatunki: </b>" + movie.genres.map(g => g.name).join(", ")
+      : "Gatunki: brak danych";
 
-    if (movie.genres && movie.genres.length > 0) {
-      modalGenres.innerHTML = "<b>Gatunki: </b>" + movie.genres.map(g => g.name).join(", ");
-    } else {
-      modalGenres.textContent = "Gatunki: brak danych";
-    }
-  
-    // Pobierz trailer z YouTube
-    const trailer = movie.videos.results.find(v => (v.type === "Trailer" || v.type === "Teaser") && v.site === "YouTube");
-
-    if (trailer) {
-      modalTrailer.innerHTML = `<iframe src="https://www.youtube.com/embed/${trailer.key}" allowfullscreen></iframe>`;
-    } else {
-      const safeTitle = encodeURIComponent(movie.title || "");
-      modalTrailer.innerHTML = `<p>Brak trailera w TMDB. <a href="https://www.youtube.com/results?search_query=${safeTitle}+trailer" target="_blank" rel="noopener">Szukaj na YouTube</a></p>`;
-    }
+    // trailer
+    const trailer = movie.videos?.results?.find(v => (v.type === "Trailer" || v.type === "Teaser") && v.site === "YouTube");
+    modalTrailer.innerHTML = trailer
+      ? `<iframe src="https://www.youtube.com/embed/${trailer.key}" allowfullscreen></iframe>`
+      : `<p>Brak trailera. <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title || movie.name)}+trailer" target="_blank">Szukaj na YouTube</a></p>`;
 
     modal.style.display = "block";
   } catch (err) {
-    console.error("Błąd ładowania filmu:", err);
+    console.error("Błąd ładowania w modalu:", err);
   }
 }
+
 
 // Zamknięcie modala
 closeBtn.addEventListener("click", () => {
@@ -276,8 +308,7 @@ window.addEventListener("click", e => {
   }
 });
 
-// Przykład – w showMovies dodaj event
-// movieEl.addEventListener("click", () => openMovieModal(movie.id));
+
 
 
 

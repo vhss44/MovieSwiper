@@ -54,6 +54,23 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
+    async function fetchSharedItem(item) {
+  let url = "";
+
+  if(item.type === "movie") {
+    url = `https://api.themoviedb.org/3/movie/${item.movie_id}?api_key=${API_KEY}&language=pl-PL`;
+  } else if(item.type === "tv") {
+    url = `https://api.themoviedb.org/3/tv/${item.movie_id}?api_key=${API_KEY}&language=pl-PL`;
+  } else if(item.type === "anime") {
+    // jeśli traktujesz anime jak film w TMDB
+    url = `https://api.themoviedb.org/3/movie/${item.movie_id}?api_key=${API_KEY}&language=pl-PL`;
+  }
+
+  const res = await fetch(url);
+  const data = await res.json();
+  return data;
+}
+
     const footer = document.getElementById("footer");
     const footerToggle = document.getElementById("footerToggle");
 
@@ -154,11 +171,13 @@ async function loadSharedList() {
   container.innerHTML = "";
 
   const { data, error } = await supabaseClient.from('shared_list').select('*');
+
   if (error) {
     console.error("Błąd pobierania wspólnej listy:", error);
     container.innerHTML = "<p>Nie udało się pobrać listy.</p>";
     return;
   }
+
   if (!data || data.length === 0) {
     container.innerHTML = "<p>Brak filmów na wspólnej liście.</p>";
     return;
@@ -166,41 +185,46 @@ async function loadSharedList() {
 
   for (const item of data) {
     try {
-      // Pobieramy tylko podstawowe info do gridu (nie trzeba videos tutaj)
-      const r = await fetch(`https://api.themoviedb.org/3/movie/${item.movie_id}?api_key=${API_KEY}&language=pl-PL`);
-      const movie = await r.json();
+      // Pobierz szczegóły filmu/serialu w zależności od typu
+      const movie = await fetchSharedItem(item);
 
-      const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w300${movie.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Poster';
+      const poster = movie.poster_path 
+        ? `https://image.tmdb.org/t/p/w300${movie.poster_path}` 
+        : 'https://via.placeholder.com/300x450?text=No+Poster';
+
+      const title = movie.title || movie.name || "Brak tytułu";
+      const release = movie.release_date || movie.first_air_date || "brak danych";
 
       const div = document.createElement("div");
       div.classList.add("movie");
       div.innerHTML = `
-        <img src="${poster}" alt="${movie.title}">
-        <h3 title="${movie.title}">${movie.title}</h3>
+        <img src="${poster}" alt="${title}">
+        <h3 title="${title}">${title}</h3>
         <p>Dodane przez: ${item.added_by}</p>
         <button class="remove-btn">Usuń</button>
       `;
       container.appendChild(div);
 
-      // Kliknięcie w obrazek lub tytuł -> otwórz modal i pobierz pełne dane (videos + genres)
+      // Kliknięcie w obrazek lub tytuł -> otwórz modal
       const img = div.querySelector("img");
       const h3 = div.querySelector("h3");
-      img.addEventListener("click", () => openMovieModal(item.movie_id));
-      h3.addEventListener("click", () => openMovieModal(item.movie_id));
+      img.addEventListener("click", () => openMovieModal(item.movie_id, item.type));
+      h3.addEventListener("click", () => openMovieModal(item.movie_id, item.type));
 
       // Usuwanie
       div.querySelector(".remove-btn").addEventListener("click", (e) => {
-        e.stopPropagation(); // nie otwieraj modala przy kliknięciu Usuń
-        if (confirm(`Czy na pewno chcesz usunąć "${movie.title}"?`)) {
+        e.stopPropagation();
+        if (confirm(`Czy na pewno chcesz usunąć "${title}"?`)) {
           removeFromSharedList(Number(item.movie_id));
         }
       });
 
     } catch (err) {
-      console.error("Błąd pobierania filmu do gridu:", err);
+      console.error("Błąd pobierania filmu/serialu do gridu:", err);
     }
   }
 }
+
 
 
 // ---------------------
